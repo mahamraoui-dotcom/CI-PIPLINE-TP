@@ -1,33 +1,60 @@
-name: Pipeline simple
+name: CI Pipeline Multi-jobs
 
 on:
-  push :
-    branches : main
-  pull_request : 
-    branches : main
-  workflow_dispatch : 
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
-jobs : 
-  build :
-    runs-on : ubuntu-latest
-    steps :  
-      - name : Recuperer le code
-        uses : actions/checkout@v4
-      - name : Installer python
-        uses : actions/setup-python@v5
-        with :
-          python-version : "3.11"
-
-      - name : Installer les dépendances 
-        run : pip install -r requirements.txt
-      - name : flake8
-        run : |
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install flake8
+        run: pip install flake8
+      - name: Run lint
+        run: |
           flake8 app --count --select=E9,F63,F7,F82,F841 --show-source --statistics
           flake8 app --count --max-complexity=10 --max-line-length=127 --statistics
           flake8 tests --count --max-line-length=127 --statistics
 
-      - name : lances les tests
-        run : PYTHONPATH=. pytest -v --cov=app
+  test:
+    needs: lint  
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-cov
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Run tests with coverage
+        run: pytest tests/ -v --cov=app
 
-
- 
+  build:
+    needs: test  
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install build tool
+        run: pip install build
+      - name: Build package
+        run: python -m build
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package
+          path: dist/
