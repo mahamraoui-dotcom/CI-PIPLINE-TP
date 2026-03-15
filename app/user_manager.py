@@ -15,5 +15,5 @@ class UserManager:
         return len(self.users)
     def count_total_users(users):
         return len(users)
-    
+    # Test du pipeline CI
     
