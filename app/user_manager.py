@@ -12,6 +12,7 @@ class UserManager:
     def remove_user(self, username):
         if username not in self.users:
             raise ValueError("Utilisateur introuvable")
+        
         self.users.remove(username)
 
     def count_users(self):
